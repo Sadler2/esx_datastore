@@ -22,6 +22,12 @@ MySQL.ready(function()
 			for j=1, #result2, 1 do
 				local storeName  = result2[j].name
 				local storeOwner = result2[j].owner
+
+				if #result2[j].data > 32767 then
+					print("^1DATASTORE OVERFLOW! "..storeName.."/"..storeOwner.." ("..tostring(#result2[j].data)..")")
+					result2[j].data = nil
+				end
+
 				local storeData  = (result2[j].data == nil and {} or json.decode(result2[j].data))
 				local dataStore  = CreateDataStore(storeName, storeOwner, storeData)
 
@@ -47,11 +53,18 @@ MySQL.ready(function()
 end)
 
 function GetDataStore(name, owner)
+	if DataStores[name] == nil then
+		print("^1UNKNOWN DATASTORE: "..tostring(name).." !")
+		return nil
+	end
+
 	for i=1, #DataStores[name], 1 do
 		if DataStores[name][i].owner == owner then
 			return DataStores[name][i]
 		end
 	end
+
+	return nil
 end
 
 function GetDataStoreOwners(name)
@@ -81,8 +94,6 @@ AddEventHandler('esx_datastore:getSharedDataStore', function(name, cb)
 end)
 
 AddEventHandler('esx:playerLoaded', function(playerId, xPlayer)
-	local dataStores = {}
-
 	for i=1, #DataStoresIndex, 1 do
 		local name      = DataStoresIndex[i]
 		local dataStore = GetDataStore(name, xPlayer.identifier)
@@ -97,9 +108,5 @@ AddEventHandler('esx:playerLoaded', function(playerId, xPlayer)
 			dataStore = CreateDataStore(name, xPlayer.identifier, {})
 			table.insert(DataStores[name], dataStore)
 		end
-
-		table.insert(dataStores, dataStore)
 	end
-
-	xPlayer.set('dataStores', dataStores)
 end)
